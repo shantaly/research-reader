@@ -1,34 +1,41 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { readFile } from 'fs/promises';
-import path from 'path';
+import { PaperService } from '@/server/services/paperService';
+import { extractArxivId } from '@/server/utils/arxiv';
 
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
     const id = searchParams.get('id');
-
-    if (!id) {
-      return new NextResponse('Missing ID parameter', { status: 400 });
+    const url = searchParams.get('url');
+    
+    let arxivId: string | null = null;
+    
+    if (id) {
+      arxivId = id;
+    } else if (url) {
+      arxivId = extractArxivId(url);
     }
 
-    // Sanitize the ID to prevent directory traversal
-    const sanitizedId = id.replace(/[^a-zA-Z0-9.-]/g, '');
-    const pdfPath = path.join(process.cwd(), 'public', 'pdfs', `${sanitizedId}.pdf`);
+    if (!arxivId) {
+      return new NextResponse('Missing or invalid arXiv ID/URL parameter', { status: 400 });
+    }
 
-    try {
-      const pdfBuffer = await readFile(pdfPath);
-      
-      return new NextResponse(pdfBuffer, {
-        headers: {
-          'Content-Type': 'application/pdf',
-          'Content-Disposition': `inline; filename="${sanitizedId}.pdf"`,
-        },
-      });
-    } catch (error) {
-      console.error('Error reading PDF:', error);
+    console.log('Requesting PDF for id:', arxivId);
+    const pdfBuffer = await PaperService.getPaperPDF(arxivId);
+
+    // Also adding the paper to the database if it doesn't exist
+    await PaperService.getOrCreatePaper(arxivId);
+    
+    return new NextResponse(pdfBuffer, {
+      headers: {
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': `inline; filename="${arxivId}.pdf"`,
+      },
+    });
+  } catch (error) {
+    if (error instanceof Error && error.message === 'PDF not found') {
       return new NextResponse('PDF not found', { status: 404 });
     }
-  } catch (error) {
     console.error('Server error:', error);
     return new NextResponse('Internal Server Error', { status: 500 });
   }

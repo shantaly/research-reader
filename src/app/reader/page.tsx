@@ -13,7 +13,9 @@ function ReaderContent() {
   // If ID is provided, use local API endpoint
   const pdfUrl = id
     ? `/api/pdf?id=${encodeURIComponent(id)}`
-    : url || "/pdfs/2307.16832v1.pdf"; // Fallback to default if no URL
+    : url
+      ? `/api/pdf?url=${encodeURIComponent(url)}`
+      : "/pdfs/2307.16832v1.pdf"; // Fallback to default if no URL or ID
 
   return (
     <div className="bg-white rounded-lg shadow-lg p-6">
