@@ -1,6 +1,7 @@
 import { supabase } from '../config/supabase';
 import { ArxivService } from './arxivService';
 import { extractArxivId } from '../utils/arxiv';
+import { NextResponse } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
 import { readFile } from 'fs/promises';
 import path from 'path';
@@ -68,6 +69,43 @@ export class PaperService {
     } catch (error) {
       console.error('Error in getPaperPDF:', error);
       throw new Error('PDF not found');
+    }
+  }
+
+  static async searchPaperByIdOrUrl(id: string | null, url: string | null): Promise<{ arxivId: string, pdf: Buffer }> {
+    try {
+      // Validate that at least one parameter is provided
+      if (!id && !url) {
+        throw new Error('Either id or url parameter must be provided');
+      }
+
+      let arxivId: string | null = null;
+      
+      if (id) {
+        arxivId = extractArxivId(id);
+      } else if (url) {
+        arxivId = extractArxivId(url);
+      }
+
+      if (!arxivId) {
+        throw new Error('Missing or invalid arXiv ID/URL parameter');
+      }
+
+      // Create/update paper record in background without waiting
+      this.getOrCreatePaper(arxivId).catch(error => {
+        console.error('Error creating/updating paper record:', error);
+      });
+      
+      // Return both arxivId and PDF buffer
+      const pdfBuffer = await this.getPaperPDF(arxivId);
+      return {
+        arxivId,
+        pdf: pdfBuffer
+      };
+
+    } catch (error) {
+      console.error('Error in searchPaperByIdOrUrl:', error);
+      throw error;
     }
   }
 } 
