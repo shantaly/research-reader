@@ -2,12 +2,13 @@ import './globals.css';
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import Navbar from '@/components/Navbar';
+import { ChatProvider } from '@/contexts/ChatContext';
 
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
   title: 'Research Reader',
-  description: 'A modern platform for learning and PDF management',
+  description: 'AI-powered research paper reader',
 };
 
 export default function RootLayout({
@@ -18,12 +19,12 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <div className="min-h-screen bg-gray-50">
+        <ChatProvider>
           <Navbar />
           <main className="mx-auto">
             {children}
           </main>
-        </div>
+        </ChatProvider>
       </body>
     </html>
   );
