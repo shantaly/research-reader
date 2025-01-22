@@ -6,6 +6,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { readFile } from 'fs/promises';
 import path from 'path';
 import axios from 'axios';
+import { PDFService } from './pdfService';
 
 export class PaperService {
   static async getOrCreatePaper(arxivInput: string) {
@@ -91,13 +92,23 @@ export class PaperService {
         throw new Error('Missing or invalid arXiv ID/URL parameter');
       }
 
-      // Create/update paper record in background without waiting
-      this.getOrCreatePaper(arxivId).catch(error => {
-        console.error('Error creating/updating paper record:', error);
-      });
-      
-      // Return both arxivId and PDF buffer
+      // Get PDF buffer first for quick rendering
       const pdfBuffer = await this.getPaperPDF(arxivId);
+
+      // Create/update paper record and extract text in background
+      this.getOrCreatePaper(arxivId)
+        .then(async () => {
+          try {
+            await PDFService.addFullTextToPaper(pdfBuffer, arxivId);
+            console.log("paper full text updated");
+          } catch (error) {
+            console.error('Error updating paper full text:', error);
+          }
+        })
+        .catch(error => {
+          console.error('Error creating/updating paper record:', error);
+        });
+      
       return {
         arxivId,
         pdf: pdfBuffer
