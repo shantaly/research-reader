@@ -20,7 +20,7 @@ export default function AuthErrorPage() {
         </div>
         <div className="mt-8 text-center">
           <Link
-            href="/auth/signin"
+            href="/signin"
             className="text-indigo-600 hover:text-indigo-500"
           >
             Try signing in again

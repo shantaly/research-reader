@@ -3,7 +3,17 @@ export function extractArxivId(input: string | null): string | null {
   
   try {
     // Clean the input
-    const cleanInput = input.trim();
+    let cleanInput = input.trim();
+    
+    // Handle URL-encoded strings
+    try {
+      if (cleanInput.includes('%2F')) {
+        cleanInput = decodeURIComponent(cleanInput);
+      }
+    } catch (e) {
+      console.error('Error decoding URL:', e);
+      // Continue with original input if decoding fails
+    }
     
     // Direct arXiv ID pattern (with optional version)
     const directIdPattern = /^(\d{4}\.\d{4,5})(v\d+)?$/;
@@ -18,7 +28,9 @@ export function extractArxivId(input: string | null): string | null {
       // arxiv.org/abs/arXiv: format
       /arxiv\.org\/abs\/arXiv:(\d{4}\.\d{4,5})(v\d+)?/,
       // Direct PDF links
-      /arxiv\.org\/pdf\/(\d{4}\.\d{4,5})(v\d+)?\.pdf/
+      /arxiv\.org\/pdf\/(\d{4}\.\d{4,5})(v\d+)?\.pdf/,
+      // URL parameter format
+      /url=.*arxiv\.org\/(?:abs|pdf)\/(\d{4}\.\d{4,5})(v\d+)?/
     ];
 
     for (const pattern of urlPatterns) {

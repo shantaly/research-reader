@@ -54,7 +54,7 @@ export class PaperInteractionService {
     // Create the complete interaction record
     const interactionData = {
       id: uuidv4(),
-      user_id: userId || '123e4567-e89b-12d3-a456-426614174000',
+      user_id: userId,
       paper_id: paper.id,
       highlighted_text: highlightedText,
       interaction_type: interactionType,
@@ -65,6 +65,7 @@ export class PaperInteractionService {
     };
 
     // Store in database
+    if (userId) {
     const { data, error } = await supabase
       .from('paper_interactions')
       .insert(interactionData)
@@ -73,6 +74,7 @@ export class PaperInteractionService {
 
     if (error) throw error;
     return data;
+    }
   }
 
   private async generateAIResponse(

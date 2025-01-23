@@ -20,7 +20,7 @@ const Navbar = () => {
   const handleSignOut = async () => {
     const { error } = await signOut();
     if (!error) {
-      router.push('/auth/signin');
+      router.push('/signin');
     }
   };
 
@@ -52,7 +52,7 @@ const Navbar = () => {
               </>
             ) : (
               <Link
-                href="/auth/signin"
+                href="/signin"
                 className="text-gray-600 hover:text-gray-900"
               >
                 Sign in
@@ -65,4 +65,4 @@ const Navbar = () => {
   );
 };
 
-export default Navbar; 
+export default Navbar;
