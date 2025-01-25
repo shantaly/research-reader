@@ -1,35 +1,33 @@
-import { createClient } from '@supabase/supabase-js';
-import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
+import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
 
-const supabaseUrl = process.env.SUPABASE_URL!;
-const supabaseKey = process.env.SUPABASE_ANON_KEY!;
-const storageBucket = process.env.SUPABASE_STORAGE_BUCKET!;
+const s3Client = new S3Client({
+  endpoint: process.env.SUPABASE_S3_ENDPOINT,
+  region: 'us-east-2',
+  credentials: {
+    accessKeyId: process.env.SUPABASE_S3_ACCESS_KEY!,
+    secretAccessKey: process.env.SUPABASE_S3_SECRET_KEY!
+  },
+  forcePathStyle: true
+});
+
+const bucketName = process.env.SUPABASE_STORAGE_BUCKET!;
 
 export class StorageService {
   static async uploadPDF(file: Buffer, fileName: string, userId: string): Promise<string> {
     try {
-      // Create an authenticated Supabase client using cookies
-      const supabase = createServerComponentClient({ cookies });
-      
       const filePath = `${userId}/${fileName}`;
       
-      const { data, error } = await supabase.storage
-        .from(storageBucket)
-        .upload(filePath, file, {
-          contentType: 'application/pdf',
-          upsert: true
-        });
+      const command = new PutObjectCommand({
+        Bucket: bucketName,
+        Key: filePath,
+        Body: file,
+        ContentType: 'application/pdf'
+      });
 
-      if (error) {
-        throw error;
-      }
+      await s3Client.send(command);
 
-      const { data: urlData } = supabase.storage
-        .from(storageBucket)
-        .getPublicUrl(filePath);
-
-      return urlData.publicUrl;
+      // Construct the public URL
+      return `${process.env.SUPABASE_S3_ENDPOINT}/${bucketName}/${filePath}`;
     } catch (error) {
       console.error('Error uploading PDF:', error);
       throw error;
@@ -38,15 +36,12 @@ export class StorageService {
 
   static async deletePDF(filePath: string): Promise<void> {
     try {
-      const supabase = createServerComponentClient({ cookies });
+      const command = new DeleteObjectCommand({
+        Bucket: bucketName,
+        Key: filePath
+      });
 
-      const { error } = await supabase.storage
-        .from(storageBucket)
-        .remove([filePath]);
-
-      if (error) {
-        throw error;
-      }
+      await s3Client.send(command);
     } catch (error) {
       console.error('Error deleting PDF:', error);
       throw error;
