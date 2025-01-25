@@ -2,16 +2,7 @@ import { supabase } from '../config/supabase';
 import { PaperInteraction } from '../types/paper';
 import { OpenAI } from 'openai';
 import { v4 as uuidv4 } from 'uuid';
-
-interface InteractionRequest {
-  highlightedText: string;
-  interactionType: PaperInteraction['interaction_type'];
-  pageLocation: number;
-  arxivId: string;
-  customQuestion?: string;
-  contextText?: string;
-  userId?: string;
-}
+import { InteractionRequest } from '../types/interaction';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY || ''
