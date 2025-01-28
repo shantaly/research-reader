@@ -1,7 +1,9 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useChat } from '@/contexts/ChatContext';
+import { supabase } from '@/utils/supabase';
+import {extractArxivId} from '@/server/utils/arxiv';
 
 interface TextSelectionSidebarProps {
   selectedText: string;
@@ -17,6 +19,21 @@ const TextSelectionSidebar = ({ selectedText, currentPage, arxivId, onClose }: T
   const [showPromptInput, setShowPromptInput] = useState(false);
   const [contextText, setContextText] = useState('');
   const [showContextInput, setShowContextInput] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUserId(session?.user?.id || null);
+    });
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUserId(session?.user?.id || null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   // Filter messages for current paper
   const currentPaperMessages = messages.filter(msg => msg.arxivId === arxivId);
@@ -48,10 +65,10 @@ const TextSelectionSidebar = ({ selectedText, currentPage, arxivId, onClose }: T
           highlightedText: selectedText,
           interactionType: actionType,
           pageLocation: currentPage,
-          arxivId,
+          arxivId: extractArxivId(arxivId),
           customQuestion: actionType === 'custom' ? customPrompt : undefined,
           contextText: contextText || undefined,
-          userId: undefined // Optional, will use default in backend
+          userId: userId
         }),
       });
 
